@@ -10,9 +10,8 @@ def create_test_map():
 
     grid = np.zeros((20, 20))
 
-    # Blocked cells (2)
-    grid[5:15, 10] = 2
-    grid[10, 5:15] = 2
+    grid[5:15, 10] = 1
+    grid[10, 5:15] = 1
 
     # Rough terrain (1)
     grid[3:8, 3:8] = 1
