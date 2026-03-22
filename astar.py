@@ -10,21 +10,18 @@ class Node:
     """
     A class representing each state (coordinate) and cost in the search space.
     """
-    def __init__(self, x, y, g=0, h=0, parent=None):
-        self.x = x
-        self.y = y
-        self.g = g  # Current cost from the beginning to this point.
-        self.h = h  # The estimated (heuristic (in TR): tahmini) cost from this node to the target.
-        self.f = g + h # Total cost score
+    def __init__(self, x, y, g=0.0, h=0.0, parent=None):
+        self.x = int(x)
+        self.y = int(y)
+        self.g = float(g)
+        self.h = float(h)
+        self.f = self.g + self.h
         self.parent = parent
 
     def __lt__(self, other):
-        # A comparison operator is used to enable the Priority Queue to select.
-        # the lowest-cost element.
         return self.f < other.f
 
 def heuristic(a, b):
-    """Calculates the "Euclidean distance" as the crow flies between two points."""
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 def astar(grid, start, goal):
@@ -36,14 +33,12 @@ def astar(grid, start, goal):
     open_list = []
     closed = set()
 
-    start_node = Node(start[0], start[1], 0, heuristic(start, goal))
+    start_node = Node(int(start[0]), int(start[1]), 0.0, heuristic(start, goal))
     heapq.heappush(open_list, start_node)
 
     while open_list:
         current = heapq.heappop(open_list)
 
-        # If the destination has been reached,
-        # trace the route back to determine the destination.
         if (current.x, current.y) == goal:
             path = []
             while current:
@@ -56,16 +51,18 @@ def astar(grid, start, goal):
         for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),
                        (-1,-1),(-1,1),(1,-1),(1,1)]:
 
-            nx = current.x + dx
-            ny = current.y + dy
+            nx = int(current.x + dx)
+            ny = int(current.y + dy)
 
             if 0 <= nx < rows and 0 <= ny < cols:
-                if grid[nx][ny] == 1: # Obstacle Control.
+                if grid[nx][ny] == 2:  # Obstacle check
                     continue
                 if (nx, ny) in closed:
                     continue
 
-                g = current.g + math.hypot(dx, dy)
+                # Apply penalty for rough terrain (1)
+                terrain_multiplier = 2.0 if grid[nx][ny] == 1 else 1.0
+                g = current.g + (math.hypot(dx, dy) * terrain_multiplier)
                 h = heuristic((nx, ny), goal)
 
                 neighbor = Node(nx, ny, g, h, current)
@@ -83,7 +80,7 @@ def astar_with_penalty(grid, start, goal, distance_map, lambda_weight=5):
     open_list = []
     closed = set()
 
-    start_node = Node(start[0], start[1], 0, heuristic(start, goal))
+    start_node = Node(int(start[0]), int(start[1]), 0.0, heuristic(start, goal))
     heapq.heappush(open_list, start_node)
 
     while open_list:
@@ -101,22 +98,24 @@ def astar_with_penalty(grid, start, goal, distance_map, lambda_weight=5):
         for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),
                        (-1,-1),(-1,1),(1,-1),(1,1)]:
 
-            nx = current.x + dx
-            ny = current.y + dy
+            nx = int(current.x + dx)
+            ny = int(current.y + dy)
 
             if 0 <= nx < rows and 0 <= ny < cols:
-                if grid[nx][ny] == 1:
+                if grid[nx][ny] == 2:  # Obstacle check
                     continue
                 if (nx, ny) in closed:
                     continue
 
-                g = current.g + math.hypot(dx, dy)
+                # Apply penalty for rough terrain (1)
+                terrain_multiplier = 2.0 if grid[nx][ny] == 1 else 1.0
+                g = current.g + (math.hypot(dx, dy) * terrain_multiplier)
                 h = heuristic((nx, ny), goal)
 
-                # Calculation of obstacle penalty (Penalty increases as distance decreases).
+                # Dynamic penalty based on proximity to nearest obstacle
                 dist = distance_map[nx][ny]
-                penalty = 1 / (dist + 1)
-                f = g + h + lambda_weight * penalty # Lambda weighting was added to the total cost.
+                penalty = 1.0 / (dist + 1.0)
+                f = g + h + (lambda_weight * penalty)
 
                 neighbor = Node(nx, ny, g, h, current)
                 neighbor.f = f
