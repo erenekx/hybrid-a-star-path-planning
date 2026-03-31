@@ -1,126 +1,95 @@
-"""
-Purpose of astar.py: It is central to path planning logic. It includes both the Standard A* algorithm,
-which focuses solely on the shortest path, and the Penalty-based A* algorithm,
-which considers the distance to obstacles.
-"""
 import heapq
 import math
 
-class Node:
-    """
-    A class representing each state (coordinate) and cost in the search space.
-    """
-    def __init__(self, x, y, g=0, h=0, parent=None):
-        self.x = x
-        self.y = y
-        self.g = g  # Current cost from the beginning to this point.
-        self.h = h  # The estimated (heuristic (in TR): tahmini) cost from this node to the target.
-        self.f = g + h # Total cost score
-        self.parent = parent
-
-    def __lt__(self, other):
-        # A comparison operator is used to enable the Priority Queue to select.
-        # the lowest-cost element.
-        return self.f < other.f
 
 def heuristic(a, b):
-    """Calculates the "Euclidean distance" as the crow flies between two points."""
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
-def astar(grid, start, goal):
-    """
-    Standard A* Algorithm. Aims to find the shortest path,
-    disregarding safety distance when going around obstacles.
-    """
-    rows, cols = grid.shape
-    open_list = []
+
+def get_neighbors(node, grid):
+    x, y = node
+
+    directions = [
+        (1, 0), (-1, 0),
+        (0, 1), (0, -1)
+    ]
+
+    neighbors = []
+
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+
+        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
+            if grid[nx][ny] == 0:
+                neighbors.append((nx, ny))
+
+    return neighbors
+
+
+def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty_weight=0.0):
+    open_heap = []
+    heapq.heappush(open_heap, (0, start))
+
+    came_from = {}
+    g_cost = {start: 0}
     closed = set()
 
-    start_node = Node(start[0], start[1], 0, heuristic(start, goal))
-    heapq.heappush(open_list, start_node)
+    while open_heap:
+        _, current = heapq.heappop(open_heap)
 
-    while open_list:
-        current = heapq.heappop(open_list)
+        if current in closed:
+            continue
 
-        # If the destination has been reached,
-        # trace the route back to determine the destination.
-        if (current.x, current.y) == goal:
-            path = []
-            while current:
-                path.append((current.x, current.y))
-                current = current.parent
-            return path[::-1]
+        if current == goal:
+            break
 
-        closed.add((current.x, current.y))
+        closed.add(current)
 
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),
-                       (-1,-1),(-1,1),(1,-1),(1,1)]:
+        for neighbor in get_neighbors(current, grid):
 
-            nx = current.x + dx
-            ny = current.y + dy
+            if neighbor in closed:
+                continue
 
-            if 0 <= nx < rows and 0 <= ny < cols:
-                if grid[nx][ny] == 1: # Obstacle Control.
-                    continue
-                if (nx, ny) in closed:
-                    continue
+            new_g = g_cost[current] + 1
 
-                g = current.g + math.hypot(dx, dy)
-                h = heuristic((nx, ny), goal)
+            obstacle_penalty = 0
+            if distance_map is not None:
+                dist = distance_map[neighbor[0]][neighbor[1]]
+                if dist > 0:
+                    obstacle_penalty = 1.0 / (dist + 0.1)
 
-                neighbor = Node(nx, ny, g, h, current)
-                heapq.heappush(open_list, neighbor)
+            new_g_total = new_g + lambda_penalty * obstacle_penalty
 
-    return None
+            if neighbor not in g_cost or new_g_total < g_cost[neighbor]:
+                g_cost[neighbor] = new_g_total
 
-def astar_with_penalty(grid, start, goal, distance_map, lambda_weight=5):
-    """
-    Hybrid (Penalty-Induced) A* Algorithm.
-    Adds an extra penalty to the standard distance cost (g+h) based on the cell's proximity to the obstacle.
-    This allows the vehicle to prefer wider and safer curves rather than narrow spaces.
-    """
-    rows, cols = grid.shape
-    open_list = []
-    closed = set()
+                f = new_g_total + heuristic(neighbor, goal)
 
-    start_node = Node(start[0], start[1], 0, heuristic(start, goal))
-    heapq.heappush(open_list, start_node)
+                heapq.heappush(open_heap, (f, neighbor))
+                came_from[neighbor] = current
 
-    while open_list:
-        current = heapq.heappop(open_list)
+    path = []
+    node = goal
 
-        if (current.x, current.y) == goal:
-            path = []
-            while current:
-                path.append((current.x, current.y))
-                current = current.parent
-            return path[::-1]
+    if node not in came_from:
+        return []
 
-        closed.add((current.x, current.y))
+    while node != start:
+        path.append(node)
+        node = came_from[node]
 
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),
-                       (-1,-1),(-1,1),(1,-1),(1,1)]:
+    path.append(start)
+    path.reverse()
 
-            nx = current.x + dx
-            ny = current.y + dy
+    return path
 
-            if 0 <= nx < rows and 0 <= ny < cols:
-                if grid[nx][ny] == 1:
-                    continue
-                if (nx, ny) in closed:
-                    continue
 
-                g = current.g + math.hypot(dx, dy)
-                h = heuristic((nx, ny), goal)
-
-                # Calculation of obstacle penalty (Penalty increases as distance decreases).
-                dist = distance_map[nx][ny]
-                penalty = 1 / (dist + 1)
-                f = g + h + lambda_weight * penalty # Lambda weighting was added to the total cost.
-
-                neighbor = Node(nx, ny, g, h, current)
-                neighbor.f = f
-
-                heapq.heappush(open_list, neighbor)
-
-    return None
+def astar_with_penalty(grid, start, goal, distance_map, lambda_weight=1.0):
+    return astar(
+        grid,
+        start,
+        goal,
+        distance_map=distance_map,
+        lambda_penalty=lambda_weight,
+        turn_penalty_weight=0.0
+    )
