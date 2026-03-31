@@ -59,10 +59,54 @@ We evaluate the effect of the penalty parameter **λ** on:
 
 ---
 
+# Week 4 – Optimization and Performance Improvements
+
+In Week 4, the focus was on improving the efficiency and structure of the A* algorithm.
+
+### Improvements
+- Optimized the open list using a priority queue (heap)
+- Reduced unnecessary node expansions
+- Improved cost calculations for better performance
+- Refactored code for readability and maintainability
+
+### Results
+- Faster path computation
+- More stable algorithm behavior
+- Cleaner and modular code structure
+
+---
+
+# Week 5 – Visualization, Animation and Dynamic Replanning
+
+In Week 5, the project was extended with visualization and dynamic behavior to simulate real-world scenarios.
+
+### Features
+- Vehicle animation on the grid
+- Step-by-step path traversal
+- Path smoothing for more natural movement
+- Turn-aware speed adjustment
+
+### Dynamic Obstacle System
+- Introduced obstacles that appear on the planned path
+- Simulated real-time changes in the environment
+
+### Real-Time Replanning
+- When the obstacle blocks the path:
+  - The algorithm recomputes a new path
+  - The vehicle avoids the obstacle
+  - A new trajectory is followed dynamically
+
+### Outcome
+- Demonstrated intelligent navigation behavior
+- Enabled real-time decision making
+- Improved visualization for clearer understanding
+
+---
+
 # Project Files
 
 **main.py**  
-Main execution script for running experiments and generating plots.
+Main execution script for running experiments and simulations.
 
 **astar.py**  
 Contains the standard A* implementation and the penalty-based A* algorithm.
@@ -74,4 +118,4 @@ Computes the distance from each grid cell to the nearest obstacle.
 Creates the test grid environment.
 
 **visualization.py**  
-Handles visualization of paths and distance maps.
+Handles visualization, animation, and dynamic obstacle simulation.
