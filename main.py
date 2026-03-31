@@ -1,102 +1,143 @@
-"""
-Purpose of Main.py:
-This is the main executable file of the project. It creates the map, runs the algorithms,
-experiments with different Lambda values, and displays the results on the screen as graphs.
-"""
-from grid_map import create_test_map
 from astar import astar, astar_with_penalty
 from distance_map import compute_distance_map
-from visualization import visualize, visualize_distance
+from visualization import visualize, animate_path
+
 import time
-import matplotlib.pyplot as plt
+import math
+import numpy as np
+
+
+def create_maze_map():
+    grid = np.zeros((25, 25))
+
+    grid[0, :] = 1
+    grid[-1, :] = 1
+    grid[:, 0] = 1
+    grid[:, -1] = 1
+
+    grid[2:20, 5] = 1
+    grid[5:23, 10] = 1
+    grid[2:18, 15] = 1
+    grid[10:24, 20] = 1
+
+    grid[8, 5:15] = 1
+    grid[15, 10:20] = 1
+    grid[18, 3:12] = 1
+
+    # geçitler
+    grid[10, 5] = 0
+    grid[12, 10] = 0
+    grid[6, 15] = 0
+    grid[20, 20] = 0
+
+    start = (2, 2)
+    goal = (22, 22)
+
+    return grid, start, goal
+
 
 def compute_metrics(path, distance_map):
-    """
-    It measures the performance of algorithms by calculating the total length of the generated route and
-    the minimum distance to obstacles along the way.
-    """
-    import math
-
-    if path is None:
+    if not path:
         return 0, 0
 
-    length = 0
-    for i in range(1, len(path)):
-        x1, y1 = path[i-1]
-        x2, y2 = path[i]
-        length += math.hypot(x2-x1, y2-y1)
+    length = sum(
+        math.hypot(path[i][0] - path[i - 1][0],
+                   path[i][1] - path[i - 1][1])
+        for i in range(1, len(path))
+    )
 
-    min_dist = min(distance_map[x][y] for x,y in path)
+    min_dist = min(distance_map[x][y] for x, y in path)
 
     return length, min_dist
 
-# 1. Preparation of the environment and maps.
-grid, start, goal = create_test_map()
+
+def add_theta_to_path(path):
+    new_path = []
+
+    for i in range(len(path) - 1):
+        x1, y1 = path[i]
+        x2, y2 = path[i + 1]
+
+        theta = math.atan2(x2 - x1, y2 - y1)
+        new_path.append((x1, y1, theta))
+
+    new_path.append((*path[-1], new_path[-1][2]))
+    return new_path
+
+
+def smooth_path_safe(path, factor=3):
+    smooth = []
+
+    for i in range(len(path) - 1):
+        x1, y1, t1 = path[i]
+        x2, y2, t2 = path[i + 1]
+
+        for t in np.linspace(0, 1, factor):
+            x = x1 + (x2 - x1) * t
+            y = y1 + (y2 - y1) * t
+            theta = t1 + (t2 - t1) * t
+
+            smooth.append((x, y, theta))
+
+    smooth.append(path[-1])
+    return smooth
+
+
+def apply_speed_control(path):
+    new_path = []
+
+    for i in range(1, len(path) - 1):
+        x_prev, y_prev, _ = path[i - 1]
+        x, y, theta = path[i]
+        x_next, y_next, _ = path[i + 1]
+
+        v1 = np.array([x - x_prev, y - y_prev])
+        v2 = np.array([x_next - x, y_next - y])
+
+        if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+            angle = 0
+        else:
+            cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+            angle = np.arccos(np.clip(cos_angle, -1, 1))
+
+        new_path.append((x, y, theta, angle))
+
+    new_path.insert(0, (*path[0], 0))
+    new_path.append((*path[-1], 0))
+
+    return new_path
+
+
+# ---------------- MAIN ----------------
+
+grid, start, goal = create_maze_map()
 distance_map = compute_distance_map(grid)
-visualize_distance(distance_map)
 
-# 2. Running the Standard A* (Baseline) Algorithm.
-start_time = time.time()
+print("Start:", start)
+print("Goal:", goal)
+
+
+# BASELINE
+t0 = time.time()
 path_baseline = astar(grid, start, goal)
-baseline_time = time.time() - start_time
+t1 = time.time()
 
-print("Baseline A* Time:", baseline_time)
-baseline_length, baseline_min_dist = compute_metrics(path_baseline, distance_map)
-print("Baseline Path Length:", baseline_length)
-print("Baseline Min Obstacle Distance:", baseline_min_dist)
+print("Baseline A* Time:", t1 - t0)
 
-# 3a. Standard A* visualization (Hybrid A* (1. Graph))
-visualize(grid, path_baseline, start, goal, title="Standard A* (Short and Risky Route)")
+visualize(grid, path_baseline, start, goal, title="Baseline A*")
 
-# 3b. Lambda parameter sensitivity analysis (Hybrid (Penalty-Induced) A* (2. Graph))
-lambda_values = [0, 2, 5, 8, 15]
-results = []
 
-for lambda_weight in lambda_values:
-    start_time = time.time()
-    path_penalty = astar_with_penalty(
-        grid, start, goal, distance_map, lambda_weight=lambda_weight
-    )
-    penalty_time = time.time() - start_time
-    penalty_length, penalty_min_dist = compute_metrics(path_penalty, distance_map)
+# PENALTY
+t2 = time.time()
+path_penalty = astar_with_penalty(
+    grid, start, goal, distance_map, lambda_weight=15
+)
+t3 = time.time()
 
-    print(f"\nLambda: {lambda_weight}")
-    print(f"Time: {penalty_time}")
-    print(f"Path Length: {penalty_length}")
-    print(f"Min Obstacle Distance: {penalty_min_dist}")
+print("Penalty A* Time:", t3 - t2)
 
-    results.append((lambda_weight, penalty_time, penalty_length, penalty_min_dist))
+visualize(grid, path_penalty, start, goal, title="Obstacle Aware Path")
 
-# 4. Plotting the analysis metrics.
-lambdas = [r[0] for r in results]
-times = [r[1] for r in results]
-path_lengths = [r[2] for r in results]
-min_distances = [r[3] for r in results]
 
-plt.figure()
-plt.plot(lambdas, min_distances, marker='o')
-plt.xlabel("Lambda")
-plt.ylabel("Min Obstacle Distance")
-plt.title("Lambda vs Min Obstacle Distance")
-plt.grid(True)
-plt.show()
-
-plt.figure()
-plt.plot(lambdas, path_lengths, marker='o')
-plt.xlabel("Lambda")
-plt.ylabel("Path Length")
-plt.title("Lambda vs Path Length")
-plt.grid(True)
-plt.show()
-
-plt.figure()
-plt.plot(lambdas, times, marker='o')
-plt.xlabel("Lambda")
-plt.ylabel("Computation Time")
-plt.title("Lambda vs Computation Time")
-plt.grid(True)
-plt.show()
-
-# 5. Safe A* visualization (2. Graph)
-example_path = astar_with_penalty(grid, start, goal, distance_map, lambda_weight=8)
-visualize(grid, example_path, start, goal, title="Penalty Factor A* (Lambda=8, Wide and Safe Road)")
+# ⚠️ ÖNEMLİ: Dynamic replanning için RAW PATH veriyoruz
+animate_path(grid, path_penalty, start, goal)
