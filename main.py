@@ -1,6 +1,7 @@
 from astar import astar, astar_with_penalty
 from distance_map import compute_distance_map
 from visualization import visualize, animate_path
+from carla_client import CarlaBridge
 
 import time
 import math
@@ -108,7 +109,7 @@ def apply_speed_control(path):
     return new_path
 
 
-# ---------------- MAIN ----------------
+# -------$$--------- MAIN ---------$$-------
 
 grid, start, goal = create_maze_map()
 distance_map = compute_distance_map(grid)
@@ -130,14 +131,39 @@ visualize(grid, path_baseline, start, goal, title="Baseline A*")
 # PENALTY
 t2 = time.time()
 path_penalty = astar_with_penalty(
-    grid, start, goal, distance_map, lambda_weight=15
-)
+    grid, start, goal, distance_map, lambda_weight=15)
 t3 = time.time()
 
 print("Penalty A* Time:", t3 - t2)
 
-visualize(grid, path_penalty, start, goal, title="Obstacle Aware Path")
+# when you need graphics based on 2D Map, use this visualization. (also disabled for matplotlib error.)
+# visualize(grid, path_penalty, start, goal, title="Obstacle Aware Path")
 
 
-# ⚠️ ÖNEMLİ: Dynamic replanning için RAW PATH veriyoruz
+# ⚠️IMPORTANT: We are providing the RAW PATH for dynamic replanning.
 animate_path(grid, path_penalty, start, goal)
+
+print("\n---$$ Initializing CARLA 3D Environment $$---")
+
+path_with_theta = add_theta_to_path(path_penalty)
+smoothed_carla_path = smooth_path_safe(path_with_theta, factor=2)
+
+# Harita ofset değerlerini bir kere tanımla (Eğer araba binalara çarpıyorsa bu sayıları değiştir: örn 50, 50 yap)
+X_OFFSET = 49.0
+Y_OFFSET = 49.0
+
+bridge = CarlaBridge(cell_size=3)
+
+if bridge.connect():
+    # 1. Önce 2D labirentimizi 3D konilerle CARLA'ya inşa et!
+    bridge.build_custom_maze(grid, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+
+    # 2. Aracı bu labirentin başlangıç koordinatına koy
+    bridge.spawn_vehicle(start, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+
+    # 3. Yolu takip et (Sensörsüz, sadece matematik ile)
+    bridge.drive_path(smoothed_carla_path, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+
+    # İşimiz bitince her şeyi silmek için:
+    time.sleep(5)
+    bridge.cleanup()

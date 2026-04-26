@@ -9,9 +9,10 @@ def heuristic(a, b):
 def get_neighbors(node, grid):
     x, y = node
 
+    # CARLA works for <<8-direction>>.
     directions = [
-        (1, 0), (-1, 0),
-        (0, 1), (0, -1)
+        (1, 0), (-1, 0), (0, 1), (0, -1),
+        (1, 1), (1, -1), (-1, 1), (-1, -1)
     ]
 
     neighbors = []
@@ -24,7 +25,6 @@ def get_neighbors(node, grid):
                 neighbors.append((nx, ny))
 
     return neighbors
-
 
 def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty_weight=0.0):
     open_heap = []
