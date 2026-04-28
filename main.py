@@ -25,11 +25,12 @@ def create_maze_map():
     grid[15, 10:20] = 1
     grid[18, 3:12] = 1
 
-    # geçitler
-    grid[10, 5] = 0
-    grid[12, 10] = 0
-    grid[6, 15] = 0
-    grid[20, 20] = 0
+    # geçitler: 3 hücre genişliğinde açıldı (3 x 2.5m = 7.5m)
+    # Tesla Model 3 genişliği: 1.85m → 7.5m geniş geçit → rahat geçer
+    grid[9:12, 5] = 0    # was: grid[10, 5]   → tek hücre (2.5m) → çok dar
+    grid[11:14, 10] = 0  # was: grid[12, 10]  → tek hücre (2.5m) → çok dar
+    grid[5:8, 15] = 0    # was: grid[6, 15]   → tek hücre (2.5m) → çok dar
+    grid[19:22, 20] = 0  # was: grid[20, 20]  → tek hücre (2.5m) → çok dar
 
     start = (2, 2)
     goal = (22, 22)
@@ -145,25 +146,44 @@ animate_path(grid, path_penalty, start, goal)
 
 print("\n---$$ Initializing CARLA 3D Environment $$---")
 
-path_with_theta = add_theta_to_path(path_penalty)
-smoothed_carla_path = smooth_path_safe(path_with_theta, factor=2)
+# =============================================================
+# YENİ YAKLAŞIM: Yol tabanlı koridor + road spawn
+# =============================================================
+#
+# START_LOCATION → Rotanın başladığı/bittiği nokta (kırmızı çizgilerin kesişimi)
+# Koordinatları CARLA'da spectator ile bulabilirsin:
+#   spectator = world.get_spectator()
+#   print(spectator.get_transform().location)
+#
+# Town05 için başlangıç noktası — bunu kendi haritana göre ayarla:
+import carla as _carla
+START_LOCATION = _carla.Location(x=0.0, y=0.0, z=0.0)   # ← BURAYA GERÇEK KOORDİNATI YAZ
+ROUTE_DISTANCE = 200.0   # Rota boyunca kaç metre gidileceği
 
-# Harita ofset değerlerini bir kere tanımla (Eğer araba binalara çarpıyorsa bu sayıları değiştir: örn 50, 50 yap)
-X_OFFSET = 49.0
-Y_OFFSET = 49.0
-
-bridge = CarlaBridge(cell_size=3)
+bridge = CarlaBridge(cell_size=2.5)
 
 if bridge.connect():
-    # 1. Önce 2D labirentimizi 3D konilerle CARLA'ya inşa et!
-    bridge.build_custom_maze(grid, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+    # 1. Başlangıç noktasından itibaren CARLA yol waypoint'leri üret
+    route_wps = bridge.get_road_route(
+        start_location=START_LOCATION,
+        total_distance=ROUTE_DISTANCE,
+        step=2.0
+    )
 
-    # 2. Aracı bu labirentin başlangıç koordinatına koy
-    bridge.spawn_vehicle(start, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+    if route_wps:
+        # 2. Konileri yolun KENARINA diz (araç ortadan geçer)
+        bridge.build_road_corridor(
+            route_waypoints=route_wps,
+            cone_spacing=3.5,   # koniler arası mesafe (m)
+            cone_offset=4.5     # yol merkezinden yan mesafe (m) → toplam genişlik: 9m
+        )
 
-    # 3. Yolu takip et (Sensörsüz, sadece matematik ile)
-    bridge.drive_path(smoothed_carla_path, offset_x=X_OFFSET, offset_y=Y_OFFSET)
+        # 3. Aracı yola snap et (roundabout/fıskiye'ye düşmez)
+        bridge.spawn_vehicle_on_road(START_LOCATION)
 
-    # İşimiz bitince her şeyi silmek için:
+        # 4. Yol waypoint'leri boyunca süz
+        bridge.drive_waypoints(route_wps, arrival_threshold=3.0)
+
+    # Temizlik
     time.sleep(5)
     bridge.cleanup()
