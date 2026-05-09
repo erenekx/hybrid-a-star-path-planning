@@ -1,121 +1,289 @@
-# Hybrid A* Path Planning Project
+Hybrid A* Path Planning for Autonomous Vehicles
 
-This project implements and analyzes path planning algorithms for autonomous vehicles in a grid-based environment.
+A Python-based autonomous vehicle path planning project implementing and extending the Hybrid A* algorithm in a 2D grid environment.
 
----
+This project focuses on realistic autonomous navigation concepts such as:
 
-# Week 1 – Project Setup and Environment
+* Non-holonomic vehicle constraints
+* Obstacle avoidance
+* Hybrid A* search
+* Reeds-Shepp inspired motion behavior
+* Dynamic obstacle simulation
+* Vehicle animation and visualization
+* Performance analysis and comparison
 
-In the first stage of the project, the development environment and basic project structure were created.
+The project was developed incrementally following a 9-week academic roadmap.
 
-### Objectives
-- Define the project architecture
-- Prepare the grid-based simulation environment
-- Organize project modules for path planning experiments
+⸻
 
-### Implementations
-- Created the project structure
-- Implemented the grid environment generator
-- Defined start and goal positions
-- Prepared visualization utilities for later stages
+Project Overview
 
----
+Hybrid A* is one of the most widely used path planning algorithms in autonomous driving systems because it combines:
 
-# Week 2 – Baseline A* Path Planning
+* Classical graph search
+* Vehicle kinematics
+* Realistic steering behavior
 
-In this stage, the **standard A\*** path planning algorithm was implemented and tested on the grid environment.
+Unlike standard A*, Hybrid A* considers:
 
-### Features
-- Baseline A* path planning
-- Euclidean distance heuristic
-- 8-directional grid movement
-- Distance map computation for obstacle proximity
+* Vehicle orientation
+* Turning constraints
+* Forward/reverse-like motion behavior
+* Continuous movement approximation
 
-### Goal
-The goal of this stage was to implement a working A* path planner that can compute the shortest path between the start and goal positions.
+This project demonstrates how autonomous vehicles can generate collision-free and realistic paths inside obstacle-filled environments.
 
----
+⸻
 
-# Week 3 – Terrain Cost and Obstacle-Aware Planning
+Implemented Features
 
-In Week 3, the algorithm was extended to consider **terrain cost and obstacle proximity** to generate safer paths.
+Path Planning Algorithms
 
-### Improvements
-- Added terrain types in the grid map
-  - Normal terrain
-  - Rough terrain
-  - Obstacles
-- Implemented a **penalty-based A\*** algorithm
-- Introduced a **lambda (λ) parameter** to control obstacle avoidance behavior
-- Compared standard A* and penalty-based A*
+* Basic A* Algorithm
+* Safety-Aware A*
+* Hybrid A* Path Planning
+* Obstacle-aware heuristic system
 
-### Experiments
+Vehicle & Motion Simulation
 
-We evaluate the effect of the penalty parameter **λ** on:
+* Orientation-aware movement
+* Turning radius constraints
+* Reeds-Shepp inspired motion behavior
+* Collision checking
 
-- Path length
-- Minimum obstacle distance
-- Computation time
+Environment System
 
----
+* 2D grid-based maps
+* Static obstacle support
+* Dynamic obstacle simulation
+* Safe path generation
 
-# Week 4 – Optimization and Performance Improvements
+Visualization
 
-In Week 4, the focus was on improving the efficiency and structure of the A* algorithm.
+* Vehicle movement animation
+* Real-time path visualization
+* Obstacle rendering
+* Search exploration display
 
-### Improvements
-- Optimized the open list using a priority queue (heap)
-- Reduced unnecessary node expansions
-- Improved cost calculations for better performance
-- Refactored code for readability and maintainability
+Analysis & Evaluation
 
-### Results
-- Faster path computation
-- More stable algorithm behavior
-- Cleaner and modular code structure
+* A* vs Hybrid A* comparison
+* Execution time analysis
+* Path length comparison
+* Safety performance evaluation
+* Heuristic sensitivity analysis
 
----
+⸻
 
-# Week 5 – Visualization, Animation and Dynamic Replanning
+Weekly Roadmap Completion
 
-In Week 5, the project was extended with visualization and dynamic behavior to simulate real-world scenarios.
+Week 1 — Literature Review & Planning
 
-### Features
-- Vehicle animation on the grid
-- Step-by-step path traversal
-- Path smoothing for more natural movement
-- Turn-aware speed adjustment
+Completed:
 
-### Dynamic Obstacle System
-- Introduced obstacles that appear on the planned path
-- Simulated real-time changes in the environment
+* Hybrid A* research
+* Reeds-Shepp curve research
+* Autonomous navigation study
+* Project planning and presentation preparation
 
-### Real-Time Replanning
-- When the obstacle blocks the path:
-  - The algorithm recomputes a new path
-  - The vehicle avoids the obstacle
-  - A new trajectory is followed dynamically
+Week 2 — Basic A* Implementation
 
-### Outcome
-- Demonstrated intelligent navigation behavior
-- Enabled real-time decision making
-- Improved visualization for clearer understanding
+Completed:
 
----
+* Grid map generation
+* Basic A* implementation
+* Obstacle handling
+* Initial demo environment
 
-# Project Files
+Week 3 — Hybrid A* with Kinematics
 
-**main.py**  
-Main execution script for running experiments and simulations.
+Completed:
 
-**astar.py**  
-Contains the standard A* implementation and the penalty-based A* algorithm.
+* Hybrid A* implementation
+* Vehicle orientation support
+* Kinematic movement constraints
+* A* vs Hybrid A* comparison
 
-**distance_map.py**  
-Computes the distance from each grid cell to the nearest obstacle.
+Week 4 — Testing & Optimization
 
-**grid_map.py**  
-Creates the test grid environment.
+Completed:
 
-**visualization.py**  
-Handles visualization, animation, and dynamic obstacle simulation.
+* Obstacle-heavy environment testing
+* Heuristic optimization
+* Performance graph generation
+* Safety penalty analysis
+
+Week 5 — Visualization & Dynamic Obstacles
+
+Completed:
+
+* Vehicle animation system
+* Dynamic obstacle simulation
+* Real-time visualization
+* Live simulation demo
+
+Week 6 — Large Map Testing & Performance Analysis
+
+Completed:
+
+* Large-scale environment testing
+* Stress testing
+* Performance benchmarking
+* Algorithm analysis
+
+Note: CARLA simulator integration was not implemented in this version.
+The project instead focuses on a custom Python-based simulation environment.
+
+Week 7 — User Interface & Draft Report
+
+Completed:
+
+* Simulation interface improvements
+* Visualization refinements
+* Draft documentation preparation
+* Full project demonstration
+
+Week 8 — Final Experiments & Analysis
+
+Completed:
+
+* Final testing
+* Complexity evaluation
+* Optimality analysis
+* Experimental comparisons
+* Final report preparation
+
+Week 9 — Final Presentation & Delivery
+
+Completed:
+
+* Final presentation preparation
+* Video/demo preparation
+* Code cleanup and organization
+* Project delivery
+
+⸻
+
+Technologies Used
+
+* Python
+* NumPy
+* Matplotlib
+* Heapq
+* Object-Oriented Programming
+
+⸻
+
+Project Structure
+
+hybrid-a-star-path-planning/
+│
+├── main.py
+├── astar.py
+├── hybrid_astar.py
+├── environment.py
+├── visualization.py
+├── utils.py
+├── requirements.txt
+├── README.md
+│
+├── assets/
+│   ├── screenshots/
+│   ├── animations/
+│   └── graphs/
+│
+└── docs/
+    ├── reports/
+    └── presentations/
+
+⸻
+
+How the System Works
+
+1. A grid-based environment is created.
+2. Obstacles are placed inside the map.
+3. Start and goal positions are defined.
+4. The planner searches for a collision-free path.
+5. Hybrid A* generates more realistic vehicle trajectories.
+6. The final path is animated and analyzed.
+
+⸻
+
+Running the Project
+
+Clone Repository
+
+git clone https://github.com/your-username/hybrid-a-star-path-planning.git
+cd hybrid-a-star-path-planning
+
+Install Dependencies
+
+pip install -r requirements.txt
+
+Run Simulation
+
+python main.py
+
+⸻
+
+Example Outputs
+
+The project can generate:
+
+* Autonomous vehicle animations
+* Obstacle avoidance demonstrations
+* Search visualization
+* Performance graphs
+* Hybrid A* trajectory comparisons
+
+⸻
+
+Educational Objectives
+
+This project was developed to better understand:
+
+* Autonomous vehicle navigation
+* Search algorithms
+* Heuristic optimization
+* Vehicle motion planning
+* Pathfinding under constraints
+* Simulation and visualization systems
+
+⸻
+
+Limitations
+
+Current limitations include:
+
+* No real sensor integration
+* No CARLA simulator integration
+* 2D environment only
+* Simplified vehicle dynamics
+
+Despite these limitations, the project successfully demonstrates the core principles of Hybrid A* based autonomous path planning.
+
+⸻
+
+Future Improvements
+
+Potential future work:
+
+* CARLA integration
+* ROS support
+* LiDAR simulation
+* Real vehicle kinematics
+* Continuous-space planning
+* Multi-agent navigation
+
+⸻
+
+Contributors
+
+* Eren
+* Project Team Members
+
+⸻
+
+License
+
+This project was developed for educational and academic purposes.
