@@ -59,7 +59,7 @@ class CarlaBridge:
         for wp in route_waypoints:
             loc = wp.transform.location
 
-            # Koniler arası minimum mesafe kontrolü (çok sık koyma)
+            # Koniler arası minimum mesafe kontrolü
             if last_loc:
                 if math.hypot(loc.x - last_loc.x, loc.y - last_loc.y) < cone_spacing:
                     continue

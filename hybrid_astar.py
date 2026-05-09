@@ -36,8 +36,8 @@ def bicycle_model(x, y, yaw, steer, L, v, dt):
 def is_collision(node, grid, dynamic_obstacles=None):
     """Checks vehicle footprint against static and dynamic obstacles."""
     # 1. Footprint Dimensions
-    W = 2.0
-    L_front = 3.5
+    W = 1.85
+    L_front = 3.0
     L_back = 1.0
 
     # 2. Static Obstacle Check (Grid based)
@@ -69,32 +69,49 @@ def is_collision(node, grid, dynamic_obstacles=None):
 
 
 def get_successors(current_node, dt, dynamic_obstacles=None):
-    """Generates neighbors including time evolution."""
     successors = []
-    steer_inputs = [-MAX_STEER, 0.0, MAX_STEER]
+    steer_inputs = np.linspace(-MAX_STEER, MAX_STEER, 5)
 
-    for steer in steer_inputs:
-        new_x, new_y, new_yaw = bicycle_model(current_node.x, current_node.y, current_node.yaw, steer, L, 1.5, dt)
-        new_time = current_node.time + dt
+    # İLERİ, GERİ ve BEKLEME (Fren) durumları eklendi!
+    velocities = [1.5, 0.0, -1.5]
 
-        new_node = Node(
-            int(round(new_x / XY_RES)), int(round(new_y / XY_RES)), int(round(new_yaw / YAW_RES)),
-            new_x, new_y, new_yaw, 1, steer, None,
-            current_node.cost + dt + abs(steer) * 0.2,
-            time=new_time
-        )
-        successors.append(new_node)
+    for v in velocities:
+        # Eğer araç duruyorsa (v=0), direksiyonu 5 kere çevirmeye gerek yok, 1 kez bekle
+        current_steers = [0.0] if v == 0.0 else steer_inputs
+
+        for steer in current_steers:
+            new_x, new_y, new_yaw = bicycle_model(current_node.x, current_node.y, current_node.yaw, steer, L, v, dt)
+            new_time = current_node.time + dt
+
+            direction = current_node.direction if v == 0.0 else (1 if v > 0 else -1)
+
+            gear_change_penalty = 0.0 if direction == current_node.direction else 2.5
+            reverse_penalty = 0.0 if direction == 1 else 1.5
+            steer_penalty = abs(steer) * 0.5
+            wait_penalty = 0.5 if v == 0.0 else 0.0  # Durmaya ufak ceza verelim ki hep durmasın
+
+            # Hareket etmiyorsa bile geçen zamanı cost olarak ekliyoruz
+            cost = current_node.cost + (
+                abs(v) * dt if v != 0.0 else dt) + steer_penalty + gear_change_penalty + reverse_penalty + wait_penalty
+
+            new_node = Node(
+                int(round(new_x / XY_RES)), int(round(new_y / XY_RES)), int(round(new_yaw / YAW_RES)),
+                new_x, new_y, new_yaw, direction, steer, None, cost, time=new_time
+            )
+            successors.append(new_node)
     return successors
 
-
 def hybrid_astar_planning(start, goal, grid, dynamic_obstacles=None, dt=0.5):
-    """Hybrid A* search loop supporting dynamic obstacles."""
+    """Hybrid A* search loop supporting dynamic obstacles and reverse gear."""
     start_node = Node(int(round(start[0] / XY_RES)), int(round(start[1] / XY_RES)), int(round(start[2] / YAW_RES)),
                       start[0], start[1], start[2], 1, 0.0, None, 0.0, time=0.0)
 
-    open_set = {(start_node.x_idx, start_node.y_idx, start_node.yaw_idx): start_node}
+    # DÜZELTME: Index artık yönü de (direction) içeriyor (x, y, yaw, direction)
+    start_idx = (start_node.x_idx, start_node.y_idx, start_node.yaw_idx, start_node.direction)
+
+    open_set = {start_idx: start_node}
     closed_set = {}
-    pq = [(start_node.cost, (start_node.x_idx, start_node.y_idx, start_node.yaw_idx))]
+    pq = [(start_node.cost, start_idx)]
 
     while pq:
         _, current_idx = heapq.heappop(pq)
@@ -109,16 +126,18 @@ def hybrid_astar_planning(start, goal, grid, dynamic_obstacles=None, dt=0.5):
         for neighbor in get_successors(current_node, dt, dynamic_obstacles):
             if is_collision(neighbor, grid, dynamic_obstacles): continue
 
-            n_idx = (neighbor.x_idx, neighbor.y_idx, neighbor.yaw_idx)
+            # DÜZELTME: Yeni komşunun indeksine de yönü (direction) ekledik
+            n_idx = (neighbor.x_idx, neighbor.y_idx, neighbor.yaw_idx, neighbor.direction)
             if n_idx in closed_set: continue
 
             if n_idx not in open_set or open_set[n_idx].cost > neighbor.cost:
                 neighbor.parent_index = current_idx
                 open_set[n_idx] = neighbor
-                h = math.hypot(neighbor.x - goal[0], neighbor.y - goal[1])
+
+                # Heuristic: Hedefe çekim gücünü biraz artırmak için 1.2 ile çarptık
+                h = math.hypot(neighbor.x - goal[0], neighbor.y - goal[1]) * 1.2
                 heapq.heappush(pq, (neighbor.cost + h, n_idx))
     return None
-
 
 def reconstruct_path(final_node, closed_set):
     px, py, pyaw, pt = [], [], [], []

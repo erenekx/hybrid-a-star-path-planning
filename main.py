@@ -3,7 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Safe import for CARLA
+#Safe import and deploy for CARLA
 try:
     import carla as _carla
 
@@ -155,7 +155,7 @@ def main():
             'y': 15.0,
             'vx': 0.0,
             'vy': 1.0,
-            'radius': 2.5
+            'radius': 1.5
         }
     ]
 
