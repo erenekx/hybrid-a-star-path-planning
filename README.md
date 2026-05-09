@@ -2,41 +2,33 @@ Hybrid A* Path Planning for Autonomous Vehicles
 
 A comprehensive autonomous vehicle path planning project implementing and extending the Hybrid A* algorithm in both custom 2D environments and the CARLA simulator.
 
-This project focuses on realistic autonomous navigation concepts such as:
-
-* Non-holonomic vehicle constraints
-* Obstacle avoidance
-* Hybrid A* search
-* Reeds-Shepp inspired motion behavior
-* Dynamic obstacle simulation
-* Vehicle animation and visualization
-* Performance analysis and comparison
-* Autonomous navigation in CARLA
-
-The project was developed incrementally following a 9-week academic roadmap.
+This project focuses on realistic autonomous navigation concepts such as obstacle avoidance, vehicle kinematics, smooth trajectory generation, dynamic obstacle handling, and autonomous driving simulation.
 
 ⸻
 
 Project Overview
 
-Hybrid A* is one of the most widely used path planning algorithms in autonomous driving systems because it combines:
+Path planning is one of the most critical components of autonomous driving systems. Different algorithms provide different advantages depending on the environment, motion constraints, and computational requirements.
+
+This project focuses on Hybrid A* because it combines:
 
 * Classical graph search
 * Vehicle kinematics
+* Smooth path generation
 * Realistic steering behavior
 
-Unlike standard A*, Hybrid A* considers:
+Unlike traditional A*, Hybrid A* considers:
 
 * Vehicle orientation
-* Turning constraints
+* Turning radius constraints
 * Forward/reverse motion behavior
-* Continuous movement approximation
+* Continuous vehicle movement approximation
 
-This project demonstrates how autonomous vehicles can generate collision-free and realistic paths inside obstacle-filled environments in both simulated grid maps and 3D driving environments using CARLA.
+The system demonstrates realistic autonomous navigation in obstacle-filled environments using both custom simulations and CARLA-based testing.
 
 ⸻
 
-Implemented Features
+Features
 
 Path Planning Algorithms
 
@@ -75,14 +67,51 @@ Analysis & Evaluation
 * Path length comparison
 * Safety performance evaluation
 * Heuristic sensitivity analysis
+* Experimental benchmarking
+
+⸻
+
+Path Planning Algorithm Comparison
+
+Algorithm	Type	Advantages	Disadvantages
+A*	Graph-based	Optimal and fast	No kinematic constraints
+Hybrid A*	Graph + Kinematic	Kinematically feasible and smooth paths	More complex and slower
+RRT	Sampling-based	Effective in high-dimensional spaces	Produces sub-optimal paths
+RRT*	Sampling-based	Asymptotically optimal	Slow convergence
+PRM	Sampling-based	Good for multiple queries	Requires preprocessing
+Lattice Planner	Graph-based	Predefined feasible motions	Memory intensive
+D* / D* Lite	Incremental Search	Suitable for dynamic environments	No kinematic constraints
+Dijkstra	Graph-based	No heuristic required	Slower than A*
+Potential Field	Force-based	Real-time capable	Local minima problem
+MPC	Optimization-based	Handles dynamic constraints	High computational cost
+
+⸻
+
+Why Hybrid A*?
+
+This project does not claim that Hybrid A* is universally the best path planning algorithm.
+
+Instead, the project demonstrates that Hybrid A* performs very effectively for autonomous driving scenarios where:
+
+* Vehicle kinematics matter
+* Smooth trajectories are required
+* Obstacle avoidance is critical
+* Realistic driving behavior is necessary
+
+The algorithm was evaluated through comparative experimental analysis using metrics such as:
+
+* Path smoothness
+* Collision avoidance capability
+* Execution time
+* Path optimality
+* Realistic vehicle movement
+* Dynamic environment performance
 
 ⸻
 
 Weekly Roadmap Completion
 
 Week 1 — Literature Review & Planning
-
-Completed:
 
 * Hybrid A* research
 * Reeds-Shepp curve research
@@ -91,16 +120,12 @@ Completed:
 
 Week 2 — Basic A* Implementation
 
-Completed:
-
 * Grid map generation
 * Basic A* implementation
 * Obstacle handling
 * Initial demo environment
 
 Week 3 — Hybrid A* with Kinematics
-
-Completed:
 
 * Hybrid A* implementation
 * Vehicle orientation support
@@ -109,8 +134,6 @@ Completed:
 
 Week 4 — Testing & Optimization
 
-Completed:
-
 * Obstacle-heavy environment testing
 * Heuristic optimization
 * Performance graph generation
@@ -118,16 +141,12 @@ Completed:
 
 Week 5 — Visualization & Dynamic Obstacles
 
-Completed:
-
 * Vehicle animation system
 * Dynamic obstacle simulation
 * Real-time visualization
 * Live simulation demo
 
 Week 6 — CARLA Integration & Large Map Testing
-
-Completed:
 
 * CARLA simulator integration
 * 3D autonomous driving environment testing
@@ -137,16 +156,12 @@ Completed:
 
 Week 7 — User Interface & Draft Report
 
-Completed:
-
 * Simulation interface improvements
 * Visualization refinements
 * Draft documentation preparation
 * Full project demonstration
 
 Week 8 — Final Experiments & Analysis
-
-Completed:
 
 * Final testing
 * Complexity evaluation
@@ -155,8 +170,6 @@ Completed:
 * Final report preparation
 
 Week 9 — Final Presentation & Delivery
-
-Completed:
 
 * Final presentation preparation
 * Video/demo preparation
@@ -202,19 +215,7 @@ hybrid-a-star-path-planning/
 
 ⸻
 
-How the System Works
-
-1. A map environment is generated.
-2. Obstacles are placed inside the environment.
-3. Start and goal positions are defined.
-4. The planner searches for a collision-free path.
-5. Hybrid A* generates realistic vehicle trajectories.
-6. The final path is visualized and analyzed.
-7. The system can also be tested inside CARLA for 3D autonomous driving demonstrations.
-
-⸻
-
-Running the Project
+Installation
 
 Clone Repository
 
@@ -224,6 +225,10 @@ cd hybrid-a-star-path-planning
 Install Dependencies
 
 pip install -r requirements.txt
+
+⸻
+
+Usage
 
 Run Main Simulation
 
@@ -279,4 +284,4 @@ Potential future work:
 
 License
 
-This project was developed for educational and academic purposes.
+This project was developed for educational and research purposes.
