@@ -1,6 +1,6 @@
 Hybrid A* Path Planning for Autonomous Vehicles
 
-A Python-based autonomous vehicle path planning project implementing and extending the Hybrid A* algorithm in a 2D grid environment.
+A comprehensive autonomous vehicle path planning project implementing and extending the Hybrid A* algorithm in both custom 2D environments and the CARLA simulator.
 
 This project focuses on realistic autonomous navigation concepts such as:
 
@@ -11,6 +11,7 @@ This project focuses on realistic autonomous navigation concepts such as:
 * Dynamic obstacle simulation
 * Vehicle animation and visualization
 * Performance analysis and comparison
+* Autonomous navigation in CARLA
 
 The project was developed incrementally following a 9-week academic roadmap.
 
@@ -28,10 +29,10 @@ Unlike standard A*, Hybrid A* considers:
 
 * Vehicle orientation
 * Turning constraints
-* Forward/reverse-like motion behavior
+* Forward/reverse motion behavior
 * Continuous movement approximation
 
-This project demonstrates how autonomous vehicles can generate collision-free and realistic paths inside obstacle-filled environments.
+This project demonstrates how autonomous vehicles can generate collision-free and realistic paths inside obstacle-filled environments in both simulated grid maps and 3D driving environments using CARLA.
 
 ⸻
 
@@ -57,6 +58,7 @@ Environment System
 * Static obstacle support
 * Dynamic obstacle simulation
 * Safe path generation
+* CARLA simulator testing
 
 Visualization
 
@@ -64,6 +66,7 @@ Visualization
 * Real-time path visualization
 * Obstacle rendering
 * Search exploration display
+* CARLA environment demonstrations
 
 Analysis & Evaluation
 
@@ -122,17 +125,15 @@ Completed:
 * Real-time visualization
 * Live simulation demo
 
-Week 6 — Large Map Testing & Performance Analysis
+Week 6 — CARLA Integration & Large Map Testing
 
 Completed:
 
-* Large-scale environment testing
-* Stress testing
+* CARLA simulator integration
+* 3D autonomous driving environment testing
+* Large-scale map experiments
 * Performance benchmarking
-* Algorithm analysis
-
-Note: CARLA simulator integration was not implemented in this version.
-The project instead focuses on a custom Python-based simulation environment.
+* Navigation analysis in CARLA
 
 Week 7 — User Interface & Draft Report
 
@@ -170,6 +171,7 @@ Technologies Used
 * NumPy
 * Matplotlib
 * Heapq
+* CARLA Simulator
 * Object-Oriented Programming
 
 ⸻
@@ -183,6 +185,7 @@ hybrid-a-star-path-planning/
 ├── hybrid_astar.py
 ├── environment.py
 ├── visualization.py
+├── carla_simulation.py
 ├── utils.py
 ├── requirements.txt
 ├── README.md
@@ -190,7 +193,8 @@ hybrid-a-star-path-planning/
 ├── assets/
 │   ├── screenshots/
 │   ├── animations/
-│   └── graphs/
+│   ├── graphs/
+│   └── carla_demo/
 │
 └── docs/
     ├── reports/
@@ -200,12 +204,13 @@ hybrid-a-star-path-planning/
 
 How the System Works
 
-1. A grid-based environment is created.
-2. Obstacles are placed inside the map.
+1. A map environment is generated.
+2. Obstacles are placed inside the environment.
 3. Start and goal positions are defined.
 4. The planner searches for a collision-free path.
-5. Hybrid A* generates more realistic vehicle trajectories.
-6. The final path is animated and analyzed.
+5. Hybrid A* generates realistic vehicle trajectories.
+6. The final path is visualized and analyzed.
+7. The system can also be tested inside CARLA for 3D autonomous driving demonstrations.
 
 ⸻
 
@@ -220,9 +225,13 @@ Install Dependencies
 
 pip install -r requirements.txt
 
-Run Simulation
+Run Main Simulation
 
 python main.py
+
+Run CARLA Simulation
+
+python carla_simulation.py
 
 ⸻
 
@@ -235,6 +244,7 @@ The project can generate:
 * Search visualization
 * Performance graphs
 * Hybrid A* trajectory comparisons
+* CARLA autonomous driving demonstrations
 
 ⸻
 
@@ -248,19 +258,7 @@ This project was developed to better understand:
 * Vehicle motion planning
 * Pathfinding under constraints
 * Simulation and visualization systems
-
-⸻
-
-Limitations
-
-Current limitations include:
-
-* No real sensor integration
-* No CARLA simulator integration
-* 2D environment only
-* Simplified vehicle dynamics
-
-Despite these limitations, the project successfully demonstrates the core principles of Hybrid A* based autonomous path planning.
+* Realistic autonomous driving environments
 
 ⸻
 
@@ -268,19 +266,14 @@ Future Improvements
 
 Potential future work:
 
-* CARLA integration
+* Real-time sensor fusion
+* LiDAR integration
 * ROS support
-* LiDAR simulation
-* Real vehicle kinematics
+* Advanced vehicle dynamics
 * Continuous-space planning
 * Multi-agent navigation
+* Machine learning assisted planning
 
-⸻
-
-Contributors
-
-* Eren
-* Project Team Members
 
 ⸻
 
