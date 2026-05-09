@@ -10,7 +10,7 @@ YAW_RES = np.deg2rad(15.0)  # Angular resolution (15 degrees)
 
 
 class Node:
-    def __init__(self, x_idx, y_idx, yaw_idx, x, y, yaw, direction, steer, parent_index, cost):
+    def __init__(self, x_idx, y_idx, yaw_idx, x, y, yaw, direction, steer, parent_index, cost, time=0.0):
         self.x_idx = x_idx
         self.y_idx = y_idx
         self.yaw_idx = yaw_idx
@@ -21,6 +21,7 @@ class Node:
         self.steer = steer
         self.parent_index = parent_index
         self.cost = cost
+        self.time = time  # Tracks when the vehicle reaches this state
 
 
 def bicycle_model(x, y, yaw, steer, L, v, dt):
@@ -28,18 +29,18 @@ def bicycle_model(x, y, yaw, steer, L, v, dt):
     x += v * math.cos(yaw) * dt
     y += v * math.sin(yaw) * dt
     yaw += (v / L) * math.tan(steer) * dt
-    # Keep yaw between [-pi, pi]
     yaw = (yaw + math.pi) % (2 * math.pi) - math.pi
     return x, y, yaw
 
 
-def is_collision(node, grid):
-    """Checks vehicle footprint against the grid obstacles."""
-    W = 2.0  # Vehicle width
-    L_front = 3.5  # Distance to front from center
-    L_back = 1.0  # Distance to rear from center
+def is_collision(node, grid, dynamic_obstacles=None):
+    """Checks vehicle footprint against static and dynamic obstacles."""
+    # 1. Footprint Dimensions
+    W = 2.0
+    L_front = 3.5
+    L_back = 1.0
 
-    # Points to check on the vehicle body
+    # 2. Static Obstacle Check (Grid based)
     check_points = [(L_front, W / 2), (L_front, -W / 2), (-L_back, W / 2), (-L_back, -W / 2), (0, 0)]
 
     for dx, dy in check_points:
@@ -53,31 +54,43 @@ def is_collision(node, grid):
             return True
         if grid[idx_x, idx_y] >= 1.0:
             return True
+
+    # 3. Dynamic Obstacle Check (Time-Distance based)
+    if dynamic_obstacles:
+        for obs in dynamic_obstacles:
+            pred_x = obs['x'] + obs['vx'] * node.time
+            pred_y = obs['y'] + obs['vy'] * node.time
+
+            dist = math.hypot(node.x - pred_x, node.y - pred_y)
+            if dist < obs['radius']:
+                return True
+
     return False
 
 
-def get_successors(current_node, dt):
-    """Generates neighbors using steering angle samples."""
+def get_successors(current_node, dt, dynamic_obstacles=None):
+    """Generates neighbors including time evolution."""
     successors = []
-    # Sample steering inputs: Full Left, Straight, Full Right
     steer_inputs = [-MAX_STEER, 0.0, MAX_STEER]
 
     for steer in steer_inputs:
         new_x, new_y, new_yaw = bicycle_model(current_node.x, current_node.y, current_node.yaw, steer, L, 1.5, dt)
+        new_time = current_node.time + dt
 
         new_node = Node(
             int(round(new_x / XY_RES)), int(round(new_y / XY_RES)), int(round(new_yaw / YAW_RES)),
             new_x, new_y, new_yaw, 1, steer, None,
-            current_node.cost + dt + abs(steer) * 0.2  # Penalty for steering to favor straight paths
+            current_node.cost + dt + abs(steer) * 0.2,
+            time=new_time
         )
         successors.append(new_node)
     return successors
 
 
-def hybrid_astar_planning(start, goal, grid, dt=0.5):
-    """Main search loop for Hybrid A*."""
+def hybrid_astar_planning(start, goal, grid, dynamic_obstacles=None, dt=0.5):
+    """Hybrid A* search loop supporting dynamic obstacles."""
     start_node = Node(int(round(start[0] / XY_RES)), int(round(start[1] / XY_RES)), int(round(start[2] / YAW_RES)),
-                      start[0], start[1], start[2], 1, 0.0, None, 0.0)
+                      start[0], start[1], start[2], 1, 0.0, None, 0.0, time=0.0)
 
     open_set = {(start_node.x_idx, start_node.y_idx, start_node.yaw_idx): start_node}
     closed_set = {}
@@ -90,12 +103,11 @@ def hybrid_astar_planning(start, goal, grid, dt=0.5):
         current_node = open_set.pop(current_idx)
         closed_set[current_idx] = current_node
 
-        # Goal check: Distance threshold
         if math.hypot(current_node.x - goal[0], current_node.y - goal[1]) < 2.0:
             return reconstruct_path(current_node, closed_set)
 
-        for neighbor in get_successors(current_node, dt):
-            if is_collision(neighbor, grid): continue
+        for neighbor in get_successors(current_node, dt, dynamic_obstacles):
+            if is_collision(neighbor, grid, dynamic_obstacles): continue
 
             n_idx = (neighbor.x_idx, neighbor.y_idx, neighbor.yaw_idx)
             if n_idx in closed_set: continue
@@ -109,11 +121,12 @@ def hybrid_astar_planning(start, goal, grid, dt=0.5):
 
 
 def reconstruct_path(final_node, closed_set):
-    px, py, pyaw = [], [], []
+    px, py, pyaw, pt = [], [], [], []
     curr = final_node
     while curr is not None:
         px.append(curr.x);
         py.append(curr.y);
-        pyaw.append(curr.yaw)
+        pyaw.append(curr.yaw);
+        pt.append(curr.time)
         curr = closed_set.get(curr.parent_index)
-    return px[::-1], py[::-1], pyaw[::-1]
+    return px[::-1], py[::-1], pyaw[::-1], pt[::-1]

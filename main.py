@@ -1,11 +1,22 @@
+import time
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Safe import for CARLA
+try:
+    import carla as _carla
+
+    CARLA_AVAILABLE = True
+except ImportError:
+    CARLA_AVAILABLE = False
+    print("\n[!] CARLA library not found. Running in Algorithm-Only mode.")
+
 from astar import astar, astar_with_penalty
 from distance_map import compute_distance_map
 from visualization import visualize, animate_path
 from carla_client import CarlaBridge
-
-import time
-import math
-import numpy as np
+from hybrid_astar import hybrid_astar_planning
 
 
 def create_maze_map():
@@ -26,11 +37,10 @@ def create_maze_map():
     grid[18, 3:12] = 1
 
     # geçitler: 3 hücre genişliğinde açıldı (3 x 2.5m = 7.5m)
-    # Tesla Model 3 genişliği: 1.85m → 7.5m geniş geçit → rahat geçer
-    grid[9:12, 5] = 0    # was: grid[10, 5]   → tek hücre (2.5m) → çok dar
-    grid[11:14, 10] = 0  # was: grid[12, 10]  → tek hücre (2.5m) → çok dar
-    grid[5:8, 15] = 0    # was: grid[6, 15]   → tek hücre (2.5m) → çok dar
-    grid[19:22, 20] = 0  # was: grid[20, 20]  → tek hücre (2.5m) → çok dar
+    grid[9:12, 5] = 0
+    grid[11:14, 10] = 0
+    grid[5:8, 15] = 0
+    grid[19:22, 20] = 0
 
     start = (2, 2)
     goal = (22, 22)
@@ -111,79 +121,95 @@ def apply_speed_control(path):
 
 
 # -------$$--------- MAIN ---------$$-------
+def main():
+    grid, start, goal = create_maze_map()
+    distance_map = compute_distance_map(grid)
 
-grid, start, goal = create_maze_map()
-distance_map = compute_distance_map(grid)
+    print("Start (Grid):", start)
+    print("Goal (Grid):", goal)
 
-print("Start:", start)
-print("Goal:", goal)
+    # 1. BASELINE A*
+    print("\n--- Running Baseline A* ---")
+    t0 = time.time()
+    path_baseline = astar(grid, start, goal)
+    print("Baseline A* Time:", time.time() - t0)
+    visualize(grid, path_baseline, start, goal, title="Baseline A*")
+
+    # 2. PENALTY A*
+    print("\n--- Running Penalty A* ---")
+    t2 = time.time()
+    path_penalty = astar_with_penalty(grid, start, goal, distance_map, lambda_weight=15)
+    print("Penalty A* Time:", time.time() - t2)
+
+    print("Animating Penalty Path...")
+    animate_path(grid, path_penalty, start, goal)
+
+    # 3. HYBRID A* (Dynamic Obstacles)
+    CELL_SIZE = 2.5
+    start_hybrid = [start[0] * CELL_SIZE, start[1] * CELL_SIZE, 0.0]
+    goal_hybrid = [goal[0] * CELL_SIZE, goal[1] * CELL_SIZE, 0.0]
+
+    moving_objects = [
+        {
+            'x': 25.0,
+            'y': 15.0,
+            'vx': 0.0,
+            'vy': 1.0,
+            'radius': 2.5
+        }
+    ]
+
+    print("\n--- Running Hybrid A* Planning with Dynamic Obstacles ---")
+    t_h = time.time()
+    hybrid_path = hybrid_astar_planning(start_hybrid, goal_hybrid, grid, dynamic_obstacles=moving_objects, dt=0.5)
+    print("Hybrid A* Search Time:", time.time() - t_h)
+
+    if hybrid_path:
+        hx, hy, hyaw, ht = hybrid_path
+        print(f"Hybrid Path found! Nodes: {len(hx)}")
+
+        plt.figure(figsize=(10, 10))
+        plt.imshow(grid.T, cmap='Greys', origin='lower',
+                   extent=[0, grid.shape[0] * CELL_SIZE, 0, grid.shape[1] * CELL_SIZE])
+        plt.plot(hx, hy, "-r", linewidth=2, label="Hybrid A* Path")
+        plt.scatter(start_hybrid[0], start_hybrid[1], c='g', s=100, label="Start")
+        plt.scatter(goal_hybrid[0], goal_hybrid[1], c='b', s=100, label="Goal")
+        plt.scatter(moving_objects[0]['x'], moving_objects[0]['y'], c='orange', marker='X', s=150,
+                    label="Dynamic Obstacle (Start)")
+        plt.title("Hybrid A* (Kinematic + Dynamic Obstacle Avoidance)")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.show()
+
+        # 4. CARLA INTEGRATION
+        if CARLA_AVAILABLE:
+            print("\n---$$ Initializing CARLA 3D Environment $$---")
+            START_LOCATION = _carla.Location(x=0.0, y=0.0, z=0.0)
+            ROUTE_DISTANCE = 200.0
+
+            bridge = CarlaBridge(cell_size=CELL_SIZE)
+
+            if bridge.connect():
+                route_wps = bridge.get_road_route(
+                    start_location=START_LOCATION,
+                    total_distance=ROUTE_DISTANCE,
+                    step=2.0
+                )
+
+                if route_wps:
+                    bridge.build_road_corridor(
+                        route_waypoints=route_wps,
+                        cone_spacing=3.5,
+                        cone_offset=4.5
+                    )
+                    bridge.spawn_vehicle_on_road(START_LOCATION)
+                    bridge.drive_waypoints(route_wps, arrival_threshold=3.0)
+
+                time.sleep(5)
+                bridge.cleanup()
+    else:
+        print("CRITICAL: Hybrid A* could not find a path.")
 
 
-# BASELINE
-t0 = time.time()
-path_baseline = astar(grid, start, goal)
-t1 = time.time()
-
-print("Baseline A* Time:", t1 - t0)
-
-visualize(grid, path_baseline, start, goal, title="Baseline A*")
-
-
-# PENALTY
-t2 = time.time()
-path_penalty = astar_with_penalty(
-    grid, start, goal, distance_map, lambda_weight=15)
-t3 = time.time()
-
-print("Penalty A* Time:", t3 - t2)
-
-# when you need graphics based on 2D Map, use this visualization. (also disabled for matplotlib error.)
-# visualize(grid, path_penalty, start, goal, title="Obstacle Aware Path")
-
-
-# ⚠️IMPORTANT: We are providing the RAW PATH for dynamic replanning.
-animate_path(grid, path_penalty, start, goal)
-
-print("\n---$$ Initializing CARLA 3D Environment $$---")
-
-# =============================================================
-# YENİ YAKLAŞIM: Yol tabanlı koridor + road spawn
-# =============================================================
-#
-# START_LOCATION → Rotanın başladığı/bittiği nokta (kırmızı çizgilerin kesişimi)
-# Koordinatları CARLA'da spectator ile bulabilirsin:
-#   spectator = world.get_spectator()
-#   print(spectator.get_transform().location)
-#
-# Town05 için başlangıç noktası — bunu kendi haritana göre ayarla:
-import carla as _carla
-START_LOCATION = _carla.Location(x=0.0, y=0.0, z=0.0)   # ← BURAYA GERÇEK KOORDİNATI YAZ
-ROUTE_DISTANCE = 200.0   # Rota boyunca kaç metre gidileceği
-
-bridge = CarlaBridge(cell_size=2.5)
-
-if bridge.connect():
-    # 1. Başlangıç noktasından itibaren CARLA yol waypoint'leri üret
-    route_wps = bridge.get_road_route(
-        start_location=START_LOCATION,
-        total_distance=ROUTE_DISTANCE,
-        step=2.0
-    )
-
-    if route_wps:
-        # 2. Konileri yolun KENARINA diz (araç ortadan geçer)
-        bridge.build_road_corridor(
-            route_waypoints=route_wps,
-            cone_spacing=3.5,   # koniler arası mesafe (m)
-            cone_offset=4.5     # yol merkezinden yan mesafe (m) → toplam genişlik: 9m
-        )
-
-        # 3. Aracı yola snap et (roundabout/fıskiye'ye düşmez)
-        bridge.spawn_vehicle_on_road(START_LOCATION)
-
-        # 4. Yol waypoint'leri boyunca süz
-        bridge.drive_waypoints(route_wps, arrival_threshold=3.0)
-
-    # Temizlik
-    time.sleep(5)
-    bridge.cleanup()
+if __name__ == '__main__':
+    main()
