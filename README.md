@@ -6,6 +6,11 @@ This project focuses on realistic autonomous navigation concepts such as obstacl
 
 ⸻
 
+Project Documentaries: 
+VIDEO DEMO: https://drive.google.com/file/d/18weECFytRmlSYiz_Tw6QTNp7DQoBlYQk/view?usp=sharing
+PROJECT REPORT: https://docs.google.com/document/d/17xGx8Ln184oitY0FN1-6GndU0HRgEJge/edit?usp=sharing&ouid=110187510385375667054&rtpof=true&sd=true
+PROJECT PRESENTATION: https://docs.google.com/presentation/d/1MTyXSoPU0yPi8Uo8Fn626h0YoPk30Qtx/edit?usp=sharing&ouid=110187510385375667054&rtpof=true&sd=true
+
 Project Overview
 
 Path planning is one of the most critical components of autonomous driving systems. Different algorithms provide different advantages depending on the environment, motion constraints, and computational requirements.
