@@ -26,7 +26,6 @@ def visualize(grid, path=None, start=None, goal=None, title="Path Visualization"
     plt.title(title)
     plt.show()
 
-
 def animate_path(grid, path, start, goal):
     import copy
     from astar import astar_with_penalty
@@ -61,8 +60,8 @@ def animate_path(grid, path, start, goal):
         temp_grid = copy.deepcopy(base_grid)
         temp_grid[int(ox), int(oy)] = 1
 
-        # 🔥 replanning
-        new_path = astar_with_penalty(
+        # 🔥 replanning (BURADAKİ VİRGÜL ÇOK KRİTİK)
+        new_path, _ = astar_with_penalty(
             temp_grid,
             current,
             goal,

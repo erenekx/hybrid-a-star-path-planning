@@ -123,6 +123,7 @@ def apply_speed_control(path):
 # -------$$--------- MAIN ---------$$-------
 def main():
     grid, start, goal = create_maze_map()
+    total_start_time = time.time()
     distance_map = compute_distance_map(grid)
 
     print("Start (Grid):", start)
@@ -131,18 +132,67 @@ def main():
     # 1. BASELINE A*
     print("\n--- Running Baseline A* ---")
     t0 = time.time()
-    path_baseline = astar(grid, start, goal)
+    path_baseline, nodes_baseline = astar(grid, start, goal)
     print("Baseline A* Time:", time.time() - t0)
+    print(f"Baseline A* Expanded Nodes: {nodes_baseline}")
+
+    # İLK GÖRSEL: Sabit çizgili, engelsiz klasik Baseline Haritası
     visualize(grid, path_baseline, start, goal, title="Baseline A*")
+
+    # İKİNCİ GÖRSEL: Kırmızı engelin hareket ettiği animasyonlu Baseline Haritası
+    print("Animating Baseline Path...")
+    animate_path(grid, path_baseline, start, goal)
 
     # 2. PENALTY A*
     print("\n--- Running Penalty A* ---")
     t2 = time.time()
-    path_penalty = astar_with_penalty(grid, start, goal, distance_map, lambda_weight=15)
+    path_penalty, nodes_penalty = astar_with_penalty(grid, start, goal, distance_map, lambda_weight=15)
     print("Penalty A* Time:", time.time() - t2)
+    print(f"Penalty A* Expanded Nodes: {nodes_penalty}")
 
+    # ÜÇÜNCÜ GÖRSEL: Kırmızı engelli animasyonlu Penalty Haritası
     print("Animating Penalty Path...")
     animate_path(grid, path_penalty, start, goal)
+
+    # 2. PENALTY A*
+    print("\n--- Running Penalty A* ---")
+    t2 = time.time()
+    # YENİ: path_penalty ve nodes_penalty olarak iki değişken alıyoruz
+    path_penalty, nodes_penalty = astar_with_penalty(grid, start, goal, distance_map, lambda_weight=15)
+    print("Penalty A* Time:", time.time() - t2)
+    print(f"Penalty A* Expanded Nodes: {nodes_penalty}")
+
+    # --- YÜZDELİK ANALİZ VE RAPORLAMA BLOĞU ---
+    print("\n==================================================")
+    print("   PERFORMANCE & METRICS COMPARISON (Baseline vs Penalty)")
+    print("==================================================")
+
+    # Obstacle Clearance (Güvenli Mesafe) Hesaplama
+    _, clear_base = compute_metrics(path_baseline, distance_map)
+    _, clear_pen = compute_metrics(path_penalty, distance_map)
+
+
+    total_execution_time = time.time() - total_start_time
+    print(f"\n==================================================")
+    print(f"TOTAL EXECUTION TIME: {total_execution_time:.4f} second")
+    print(f"==================================================\n")
+
+    if clear_base > 0:
+        clearance_improvement = ((clear_pen - clear_base) / clear_base) * 100
+        print(f"Obstacle Clearance (Baseline): {clear_base:.2f} meters")
+        print(f"Obstacle Clearance (Penalty): {clear_pen:.2f} meters")
+        if clearance_improvement >= 0:
+            print(f">>> Obstacle Clearance Achieved: +{clearance_improvement:.1f}%")
+        else:
+            print(f">>> Obstacle Clearance Achieved: {clearance_improvement:.1f}%")
+
+        # Node Expansion (Optimizasyon) Hesaplama
+        if nodes_baseline > 0:  # nodes_base yerine nodes_baseline yazıldı
+            node_reduction = ((nodes_baseline - nodes_penalty) / nodes_baseline) * 100  # İsimler düzeltildi
+            if node_reduction >= 0:
+                print(f">>> Node Expansion Reduction Achieved: -{node_reduction:.1f}%")
+            else:
+                print(f">>> Node Expansion Increased By: +{abs(node_reduction):.1f}%")
 
     # 3. HYBRID A* (Dynamic Obstacles)
     CELL_SIZE = 2.5
@@ -208,8 +258,7 @@ def main():
                 time.sleep(5)
                 bridge.cleanup()
     else:
-        print("CRITICAL: Hybrid A* could not find a path.")
-
+        print("CRITICAL: Hybrid A* could not find a path.") #if our algorithm does not work, this output will be shown.
 
 if __name__ == '__main__':
     main()

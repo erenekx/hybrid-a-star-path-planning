@@ -26,6 +26,7 @@ def get_neighbors(node, grid):
 
     return neighbors
 
+
 def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty_weight=0.0):
     open_heap = []
     heapq.heappush(open_heap, (0, start))
@@ -33,6 +34,8 @@ def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty
     came_from = {}
     g_cost = {start: 0}
     closed = set()
+
+    nodes_expanded = 0  # YENİ EKLENEN SAYAÇ
 
     while open_heap:
         _, current = heapq.heappop(open_heap)
@@ -44,9 +47,9 @@ def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty
             break
 
         closed.add(current)
+        nodes_expanded += 1  # SAYACI ARTIR
 
         for neighbor in get_neighbors(current, grid):
-
             if neighbor in closed:
                 continue
 
@@ -62,9 +65,7 @@ def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty
 
             if neighbor not in g_cost or new_g_total < g_cost[neighbor]:
                 g_cost[neighbor] = new_g_total
-
                 f = new_g_total + heuristic(neighbor, goal)
-
                 heapq.heappush(open_heap, (f, neighbor))
                 came_from[neighbor] = current
 
@@ -72,7 +73,7 @@ def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty
     node = goal
 
     if node not in came_from:
-        return []
+        return [], nodes_expanded  # YENİ DÖNÜŞ (Genişletilen düğüm sayısıyla)
 
     while node != start:
         path.append(node)
@@ -81,9 +82,10 @@ def astar(grid, start, goal, distance_map=None, lambda_penalty=0.0, turn_penalty
     path.append(start)
     path.reverse()
 
-    return path
+    return path, nodes_expanded  # YENİ DÖNÜŞ
 
 
+# Fonksiyonun dönüş türü değiştiği için penalty fonksiyonunu da güncelliyoruz:
 def astar_with_penalty(grid, start, goal, distance_map, lambda_weight=1.0):
     return astar(
         grid,
